@@ -1,0 +1,8 @@
+# Ignore the SQLite database file
+myproject/db.sqlite3
+
+# Ignore the static files directory
+myproject/staticfiles/
+
+# Ignore the migrations directory inside the main app
+myproject/main/migrations/
