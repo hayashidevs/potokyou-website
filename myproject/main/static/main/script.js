@@ -1,19 +1,19 @@
-document.addEventListener('click', function(event) {
-    var mobileButton = document.getElementById('mobileButton');
-    var desktopButton = document.getElementById('desktopButton');
-    var mobileMenu = document.querySelector('[aria-labelledby="mobileButton"]');
-    var desktopMenu = document.querySelector('[aria-labelledby="desktopButton"]');
+document.addEventListener('DOMContentLoaded', function() {
+    const userLang = navigator.language || navigator.userLanguage;
+    const currentLang = document.cookie.split('; ').find(row => row.startsWith('django_language'))?.split('=')[1];
 
-    if (mobileButton.contains(event.target)) {
-        mobileMenu.classList.toggle('show');
-    } else if (desktopButton.contains(event.target)) {
-        desktopMenu.classList.toggle('show');
-    } else {
-        if (mobileMenu.classList.contains('show')) {
-            mobileMenu.classList.remove('show');
+    if (!currentLang) {
+        if (userLang.startsWith('ru')) {
+            document.cookie = "django_language=ru";
+        } else {
+            document.cookie = "django_language=en";
         }
-        if (desktopMenu.classList.contains('show')) {
-            desktopMenu.classList.remove('show');
-        }
+        window.location.reload();
     }
+
+    window.addEventListener('pageshow', function() {
+        document.querySelectorAll('video').forEach(video => {
+            video.play();
+        });
+    });
 });

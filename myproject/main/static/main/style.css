@@ -4,6 +4,8 @@ body, html {
     width: 100%;
     height: 100%;
     font-family: 'Inter', sans-serif;
+    color: #333;
+    overflow: hidden; /* Prevent scrollbars */
 }
 
 .background-video {
@@ -26,6 +28,8 @@ body, html {
     position: relative;
     z-index: 1;
     height: 100%;
+    animation: fadeInUp 1.5s ease-out forwards;
+    opacity: 0;
 }
 
 .text-white {
@@ -37,46 +41,58 @@ body, html {
 }
 
 .custom-btn {
-    width: 186px;
-    height: 60px;
+    width: 186px; /* Set the desired width */
+    height: 60px; /* Set the desired height */
     border-radius: 20px;
     padding: 14px;
     color: lightgray; /* Light gray text */
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 12px; /* Add gap between buttons */
-}
-
-.btn-dark {
+    margin: 12px; /* Ensure gap between buttons */
     background-color: #333;
     border: none;
     font-size: 18px;
+    position: relative;
 }
 
-.btn-dark:hover, .btn-dark:focus {
+.custom-btn:hover, .custom-btn:focus {
     background-color: #555;
 }
 
-.dropdown-menu {
-    display: none; /* Hide by default */
+.custom-btn .icon {
+    width: 34px; /* Set the icon block width */
+    height: 34px; /* Set the icon block height */
     position: absolute;
+    left: 14px;
+    bottom: 14px;
+}
+
+.custom-btn .icon img {
+    width: 100%; /* Ensure the image fits the icon block */
+    height: 100%; /* Ensure the image fits the icon block */
+    object-fit: cover; /* Ensure the image is resized properly */
+}
+
+/* Ensure the language button has the same styles */
+#languageButton.custom-btn {
+    width: 186px;
+    height: 60px;
+    border-radius: 20px;
+    padding: 14px;
+    color: lightgray;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 12px;
     background-color: #333;
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    right: 0; /* Align dropdown to the right */
+    border: none;
+    font-size: 18px;
+    position: relative;
 }
 
-.dropdown-menu.show {
-    display: block; /* Show when active */
-}
-
-.dropdown-menu a {
-    color: white;
-    text-decoration: none;
-    display: block;
-    margin: 5px 0;
+#languageButton.custom-btn:hover, #languageButton.custom-btn:focus {
+    background-color: #555;
 }
 
 .buttons-container {
@@ -84,9 +100,11 @@ body, html {
     bottom: 68px;
     right: 182px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: flex-end;
+    flex-wrap: wrap;
+    justify-content: center; /* Center buttons horizontally */
+    gap: 12px; /* Ensure the gap between buttons */
+    animation: fadeInUp 1.5s ease-out forwards;
+    opacity: 0;
 }
 
 .text-block {
@@ -94,7 +112,8 @@ body, html {
     bottom: 68px;
     left: 182px;
     width: 636px;
-    /* Remove the fixed height */
+    animation: fadeInUp 1.5s ease-out forwards;
+    opacity: 0;
 }
 
 .main-title {
@@ -119,10 +138,107 @@ body, html {
     margin-top: 24px; /* Ensure the gap is counted from the bottom of the title */
 }
 
+.language-container {
+    position: absolute;
+    top: 68px;
+    left: 182px;
+    animation: fadeInUp 1.5s ease-out forwards;
+    opacity: 0;
+}
+
+.container-fluid {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: flex-end;   /* Align items to the bottom */
+    height: 100%;
+    animation: fadeInUp 1.5s ease-out forwards;
+    opacity: 0;
+}
+
+.license-link {
+    position: relative; /* Change to relative */
+    color: lightgray;
+    text-decoration: none;
+    font-size: 16px;
+    animation: fadeInUp 1.5s ease-out forwards;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px; /* Adjust margin-bottom to ensure it's at the bottom */
+}
+
+.license-link a {
+    color: lightgray;
+    text-decoration: none;
+}
+
+.license-link a:hover {
+    text-decoration: underline;
+}
+
+h1, h2 {
+    color: #111;
+}
+
 h1 {
-    margin: 0;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 p {
-    margin: 0;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.content-container {
+    max-width: 800px;
+    margin: auto;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2rem;
+    border-radius: 8px;
+    animation: fadeInUp 1.5s ease-out forwards;
+    opacity: 0;
+}
+
+@media (min-width: 768px) {
+    .content-container {
+        padding: 4rem;
+    }
+}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
 }

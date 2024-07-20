@@ -7,4 +7,5 @@ urlpatterns = [
     path('download/linux/', views.download_linux, name='download_linux'),
     path('download/windows/', views.download_windows, name='download_windows'),
     path('download/macos/', views.download_macos, name='download_macos'),
+    path('change-language/<str:language>/', views.change_language, name='change_language'),
 ]

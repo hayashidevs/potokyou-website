@@ -6,3 +6,7 @@ myproject/staticfiles/
 
 # Ignore the migrations directory inside the main app
 myproject/main/migrations/
+
+# Ignore cahces
+myproject/main/__pycache__/
+myproject/myproject/__pycache__/
