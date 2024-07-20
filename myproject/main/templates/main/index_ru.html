@@ -36,32 +36,40 @@
             <!-- Button Block -->
             <div id="container2" class="d-flex flex-column align-items-end justify-content-end buttons-container">
                 <div class="d-flex flex-wrap">
-                    <a href="https://play.google.com" class="btn btn-dark custom-btn">
-                        <div class="icon">
-                            <img src="{% static 'main/icons/android.png' %}" alt="Android">
-                        </div>
-                        Android
-                    </a>
-                    <a href="https://www.apple.com/app-store/" class="btn btn-dark custom-btn">
-                        <div class="icon">
-                            <img src="{% static 'main/icons/ios.png' %}" alt="iOS">
-                        </div>
-                        iOS
-                    </a>
+                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="https://play.google.com">
+                            <div class="icon">
+                                <img src="{% static 'main/icons/android.png' %}" alt="Android">
+                            </div>
+                            Android
+                        </a>
+                    </button>
+                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="https://www.apple.com/app-store/">
+                            <div class="icon">
+                                <img src="{% static 'main/icons/ios.png' %}" alt="iOS">
+                            </div>
+                            iOS
+                        </a>
+                    </button>
                 </div>
                 <div class="d-flex flex-wrap">
-                    <a href="https://github.com/hayashidevs/potokvpn-client/releases/download/1.0.0.6/PotokVPN_x64.exe" class="btn btn-dark custom-btn">
-                        <div class="icon">
-                            <img src="{% static 'main/icons/windows.png' %}" alt="Windows">
-                        </div>
-                        Windows
-                    </a>
-                    <a href="https://github.com/hayashidevs/potokvpn-client/releases/download/1.0.0.6/PotokVPN.dmg" class="btn btn-dark custom-btn">
-                        <div class="icon">
-                            <img src="{% static 'main/icons/macos.png' %}" alt="macOS">
-                        </div>
-                        macOS
-                    </a>
+                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="https://github.com/hayashidevs/potokvpn-client/releases/download/1.0.0.6/PotokVPN_x64.exe">
+                            <div class="icon">
+                                <img src="{% static 'main/icons/windows.png' %}" alt="Windows">
+                            </div>
+                            Windows
+                        </a>
+                    </button>
+                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="https://github.com/hayashidevs/potokvpn-client/releases/download/1.0.0.6/PotokVPN.dmg">
+                            <div class="icon">
+                                <img src="{% static 'main/icons/macos.png' %}" alt="macOS">
+                            </div>
+                            macOS
+                        </a>
+                    </button>
                 </div>
             </div>
         </div>
