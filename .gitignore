@@ -10,3 +10,6 @@ myproject/main/migrations/
 # Ignore cahces
 myproject/main/__pycache__/
 myproject/myproject/__pycache__/
+
+# Ignore secrets
+myproject/secrets.json

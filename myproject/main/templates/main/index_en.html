@@ -8,7 +8,7 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'main/style.css' %}">
 </head>
-<body>
+<body class="page-transition">
     <div class="background-video">
         <video autoplay muted loop>
             <source src="{% static 'main/background.mp4' %}" type="video/mp4">
@@ -16,66 +16,58 @@
     </div>
     <div class="container-fluid h-100 d-flex flex-column justify-content-between">
         <div class="row h-100">
-            <!-- Language Dropdown -->
-            <div class="language-container">
-                <div class="btn-group dropstart">
-                    <button class="btn btn-dark custom-btn dropdown-toggle" id="languageButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        Language
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageButton">
-                        <li><a class="dropdown-item" href="/change-language/ru/">Русский</a></li>
-                        <li><a class="dropdown-item" href="/change-language/en/">English</a></li>
-                    </ul>
-                </div>
+            <!-- Language Switch -->
+            <div class="language-switch language-container">
+                <a href="#" data-lang="en">en</a> / <a href="#" data-lang="ru">ru</a>
             </div>
             <!-- Text Block -->
             <div id="container1" class="text-block">
-                <h1 class="main-title">Be in the Flow</h1>
-                <p class="main-description">Lorem ipsum dolor sit amet consectetur. Ultrices eu arcu morbi dignissim purus at risus nec. Enim eget nisl enim et quis. Sed.</p>
+                <h1 class="main-title">Potok VPN</h1>
+                <p class="main-description">We redefined network security</p>
             </div>
             <!-- Button Block -->
-            <div id="container2" class="d-flex flex-column align-items-end justify-content-end buttons-container">
-                <div class="d-flex flex-wrap">
-                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        <a href="https://play.google.com">
-                            <div class="icon">
-                                <img src="{% static 'main/icons/android.png' %}" alt="Android">
-                            </div>
-                            Android
-                        </a>
-                    </button>
-                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        <a href="https://www.apple.com/app-store/">
-                            <div class="icon">
-                                <img src="{% static 'main/icons/ios.png' %}" alt="iOS">
-                            </div>
-                            iOS
-                        </a>
-                    </button>
-                </div>
-                <div class="d-flex flex-wrap">
-                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        <a href="https://github.com/hayashidevs/potokvpn-client/releases/download/1.0.0.6/PotokVPN_x64.exe">
-                            <div class="icon">
-                                <img src="{% static 'main/icons/windows.png' %}" alt="Windows">
-                            </div>
-                            Windows
-                        </a>
-                    </button>
-                    <button class="btn btn-dark custom-btn" id="platformButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        <a href="https://github.com/hayashidevs/potokvpn-client/releases/download/1.0.0.6/PotokVPN.dmg">
-                            <div class="icon">
-                                <img src="{% static 'main/icons/macos.png' %}" alt="macOS">
-                            </div>
-                            macOS
-                        </a>
-                    </button>
-                </div>
+            <div id="container2" class="buttons-container">
+                <button class="btn btn-dark custom-btn" id="androidButton" onclick="window.location.href='https://play.google.com/store/apps/details?id=org.potok.PotokVPN'">
+                    <div class="icon">
+                        <img src="{% static 'main/icons/android.png' %}" alt="Android">
+                    </div>
+                    <div class="btn-text">
+                        <span class="btn-small-text">Download From</span>
+                        Google Play
+                    </div>
+                </button>
+                <button class="btn btn-dark custom-btn" id="iosButton" onclick="window.location.href='https://apps.apple.com/app/potok-vpn/id6557075210'">
+                    <div class="icon">
+                        <img src="{% static 'main/icons/ios.png' %}" alt="iOS">
+                    </div>
+                    <div class="btn-text">
+                        <span class="btn-small-text">Download From</span>
+                        App Store
+                    </div>
+                </button>
+                <button class="btn btn-dark custom-btn" id="windowsButton" onclick="window.location.href='https://github.com/hayashidevs/potokvpn-client/releases/latest/download/PotokVPN_x64.exe'">
+                    <div class="icon">
+                        <img src="{% static 'main/icons/windows.png' %}" alt="Windows">
+                    </div>
+                    <div class="btn-text">
+                        <span class="btn-small-text">Download for</span>
+                        Windows
+                    </div>
+                </button>
+                <button class="btn btn-dark custom-btn" id="macosButton" onclick="window.location.href='https://github.com/hayashidevs/potokvpn-client/releases/latest/download/PotokVPN.dmg'">
+                    <div class="icon">
+                        <img src="{% static 'main/icons/macos.png' %}" alt="macOS">
+                    </div>
+                    <div class="btn-text">
+                        <span class="btn-small-text">Download for</span>
+                        macOS
+                    </div>
+                </button>
             </div>
         </div>
-        <!-- License Agreement Link -->
+        <!-- License Agreement Links -->
         <div class="license-link">
-            <a href="/license/">License Agreement</a>
+            <a href="/privacy/">License Agreement</a> | <a href="/privacy-mobile-app/">Mobile App Policy</a>
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

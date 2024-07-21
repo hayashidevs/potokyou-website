@@ -1,11 +1,86 @@
+/* General Styles */
 body, html {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Helvetica', 'Arial', sans-serif; /* Apple minimalistic font */
     color: #333;
     overflow: hidden; /* Prevent scrollbars */
+}
+
+/* Keyframes for animations */
+@keyframes slideInFromTop {
+    0% { transform: translateY(-100%); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+    0% { transform: translateX(-100%); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInFromBottom {
+    0% { transform: translateY(100%); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideInFromRight {
+    0% { transform: translateX(100%); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* Animations for specific elements */
+.language-switch.language-container {
+    animation: slideInFromTop 1s ease-out;
+}
+
+.main-title {
+    animation: slideInFromLeft 1s ease-out;
+}
+
+.main-description {
+    animation: slideInFromBottom 1s ease-out;
+}
+
+.license-link {
+    animation: slideInFromBottom 1s ease-out;
+}
+
+#androidButton, #windowsButton {
+    animation: slideInFromBottom 1s ease-out;
+}
+
+#iosButton, #macosButton {
+    animation: slideInFromRight 1s ease-out;
+}
+
+.content-container {
+    animation: fadeIn 1s ease-in-out;
+}
+
+/* Page transition animations */
+.page-transition {
+    animation: pageFadeIn 1s ease-in-out;
+}
+
+@keyframes pageFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes pageFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.fade-out {
+    animation: pageFadeOut 0.5s ease-in-out;
 }
 
 .background-video {
@@ -28,8 +103,7 @@ body, html {
     position: relative;
     z-index: 1;
     height: 100%;
-    animation: fadeInUp 1.5s ease-out forwards;
-    opacity: 0;
+    opacity: 1; /* Set to fully visible */
 }
 
 .text-white {
@@ -41,19 +115,38 @@ body, html {
 }
 
 .custom-btn {
-    width: 186px; /* Set the desired width */
-    height: 60px; /* Set the desired height */
-    border-radius: 20px;
+    width: auto; /* Set the width to auto to hug the content */
+    min-width: 186px; /* Ensure minimum width */
+    height: auto; /* Set the height to auto to hug the content */
+    min-height: 60px; /* Ensure minimum height */
     padding: 14px;
+    border-radius: 20px;
     color: lightgray; /* Light gray text */
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin: 12px; /* Ensure gap between buttons */
     background-color: #333;
     border: none;
     font-size: 18px;
     position: relative;
+    text-decoration: none; /* Ensure links do not have underline */
+    font-family: 'Helvetica', 'Arial', sans-serif; /* Apple minimalistic font */
+    opacity: 1; /* Set to fully visible */
+}
+
+.btn-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 46px; /* Move text 12px to the right from the icon block */
+    font-weight: bold; /* Make text bold */
+}
+
+.btn-small-text {
+    font-size: 12px; /* Smaller text size */
+    color: rgba(211, 211, 211, 0.5); /* Light gray with 50% opacity */
+    line-height: 12px; /* 12px line height */
+    margin-bottom: 2px; /* Ensure 2px gap from main text */
+    font-weight: bold; /* Make text bold */
 }
 
 .custom-btn:hover, .custom-btn:focus {
@@ -74,12 +167,13 @@ body, html {
     object-fit: cover; /* Ensure the image is resized properly */
 }
 
-/* Ensure the language button has the same styles */
 #languageButton.custom-btn {
-    width: 186px;
-    height: 60px;
-    border-radius: 20px;
+    width: auto;
+    min-width: 186px;
+    height: auto;
+    min-height: 60px;
     padding: 14px;
+    border-radius: 20px;
     color: lightgray;
     display: flex;
     align-items: center;
@@ -99,12 +193,10 @@ body, html {
     position: absolute;
     bottom: 68px;
     right: 182px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center; /* Center buttons horizontally */
-    gap: 12px; /* Ensure the gap between buttons */
-    animation: fadeInUp 1.5s ease-out forwards;
-    opacity: 0;
+    display: grid;
+    grid-template-columns: repeat(2, auto); /* Two columns */
+    grid-template-rows: repeat(2, auto); /* Two rows */
+    gap: 12px; /* Ensure the gap between buttons and rows is exactly 12px */
 }
 
 .text-block {
@@ -112,12 +204,10 @@ body, html {
     bottom: 68px;
     left: 182px;
     width: 636px;
-    animation: fadeInUp 1.5s ease-out forwards;
-    opacity: 0;
 }
 
 .main-title {
-    width: 412px;
+    width: 100%; /* Ensure the title spans the full width */
     font-family: 'Inter', sans-serif;
     font-size: 62px;
     font-weight: 600;
@@ -125,6 +215,8 @@ body, html {
     letter-spacing: -0.025em;
     text-align: left;
     color: white;
+    white-space: nowrap; /* Ensure the title stays on one line */
+    opacity: 1; /* Set to fully visible */
 }
 
 .main-description {
@@ -136,39 +228,55 @@ body, html {
     text-align: left;
     color: lightgray;
     margin-top: 24px; /* Ensure the gap is counted from the bottom of the title */
+    opacity: 1; /* Set to fully visible */
 }
 
 .language-container {
     position: absolute;
     top: 68px;
     left: 182px;
-    animation: fadeInUp 1.5s ease-out forwards;
-    opacity: 0;
+    opacity: 1; /* Set to fully visible */
 }
 
-.container-fluid {
-    display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: flex-end;   /* Align items to the bottom */
-    height: 100%;
-    animation: fadeInUp 1.5s ease-out forwards;
-    opacity: 0;
+.language-switch {
+    font-size: 16px;
+    color: white;
+}
+
+.language-switch a {
+    text-decoration: none;
+    color: lightgray;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace; /* Apply code-like font */
+}
+
+.language-switch a.active {
+    text-decoration: underline;
+    color: white;
+}
+
+.language-switch a:hover {
+    text-decoration: underline;
+    color: white;
 }
 
 .license-link {
-    position: relative; /* Change to relative */
+    position: absolute; /* Change to absolute */
+    bottom: 10px; /* Ensure it's at the bottom */
+    width: 100%; /* Center horizontally */
     color: lightgray;
     text-decoration: none;
     font-size: 16px;
-    animation: fadeInUp 1.5s ease-out forwards;
     display: flex;
     justify-content: center;
-    margin-bottom: 10px; /* Adjust margin-bottom to ensure it's at the bottom */
+    opacity: 1; /* Set to fully visible */
 }
 
 .license-link a {
     color: lightgray;
     text-decoration: none;
+    margin: 0 10px; /* Add margin for spacing */
+    font-family: 'Courier New', Courier, monospace; /* Apply code-like font */
 }
 
 .license-link a:hover {
@@ -199,8 +307,8 @@ p {
     background: rgba(255, 255, 255, 0.9);
     padding: 2rem;
     border-radius: 8px;
-    animation: fadeInUp 1.5s ease-out forwards;
-    opacity: 0;
+    opacity: 1; /* Set to fully visible */
+    margin-top: 20px; /* Ensure 20px margin from the top */
 }
 
 @media (min-width: 768px) {
@@ -209,36 +317,57 @@ p {
     }
 }
 
-/* Animation Keyframes */
-@keyframes fadeInUp {
-    from {
-        transform: translateY(50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+/* Custom scrollable container */
+.scrollable-container {
+    max-height: 80vh; /* Adjust height as needed */
+    overflow-y: auto;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #ddd transparent; /* Firefox */
+    -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+/* Hide default scrollbar for Chrome, Safari and Opera */
+.scrollable-container::-webkit-scrollbar {
+    width: 12px;
 }
 
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translateX(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
+.scrollable-container::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+    border-radius: 10px;
+    border: 3px solid transparent; /* Padding around scrollbar thumb */
+    background-clip: content-box; /* Ensures padding is visible */
+}
+
+.scrollable-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Custom scroll thumb hover effect */
+.scrollable-container::-webkit-scrollbar-thumb:hover {
+    background-color: #ccc;
+}
+
+/* Custom scroll thumb active effect */
+.scrollable-container::-webkit-scrollbar-thumb:active {
+    background-color: #bbb;
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.custom-table th, .custom-table td {
+    border: 1px solid #000; /* Black border */
+    padding: 8px;
+    text-align: left;
+}
+
+.custom-table th {
+    background-color: #f2f2f2; /* Light grey background for header */
+}
+
+.custom-table td {
+    background-color: #fff; /* White background for cells */
 }

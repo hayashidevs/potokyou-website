@@ -1,20 +1,32 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 
+def get_template(language, en_template, ru_template):
+    return ru_template if language == 'ru' else en_template
+
+def detect_language(request):
+    language = request.COOKIES.get('django_language')
+    if not language:
+        user_lang = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+        if user_lang.startswith('ru'):
+            language = 'ru'
+        else:
+            language = 'en'
+    return language
+
 def index(request):
-    language = request.COOKIES.get('django_language', 'en')
-    if language == 'ru':
-        template = 'main/index_ru.html'
-    else:
-        template = 'main/index_en.html'
+    language = detect_language(request)
+    template = get_template(language, 'main/index_en.html', 'main/index_ru.html')
     return render(request, template)
 
 def license_agreement(request):
-    language = request.COOKIES.get('django_language', 'en')
-    if language == 'ru':
-        template = 'main/license_ru.html'
-    else:
-        template = 'main/license_en.html'
+    language = detect_language(request)
+    template = get_template(language, 'main/license_en.html', 'main/license_ru.html')
+    return render(request, template)
+
+def mobile_app_policy(request):
+    language = detect_language(request)
+    template = get_template(language, 'main/mobile_app_policy_en.html', 'main/mobile_app_policy_ru.html')
     return render(request, template)
 
 def download_linux(request):
@@ -36,6 +48,6 @@ def download_macos(request):
     return response
 
 def change_language(request, language):
-    response = redirect('/')
+    response = redirect(request.META.get('HTTP_REFERER', '/'))
     response.set_cookie('django_language', language)
     return response
