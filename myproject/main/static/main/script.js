@@ -1,27 +1,41 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const currentLang = getCookie('django_language') || detectUserLanguage() || 'en';
+    const overlay = document.querySelector('.transition-overlay');
 
-    highlightActiveLanguage(currentLang);
-    updateLanguageSwitcherLinks();
-    cleanURL();
+    // Show overlay during navigation
+    function showOverlay() {
+        overlay.classList.add('transition-active');
+    }
 
+    // Hide overlay on page load
+    function hideOverlay() {
+        overlay.classList.remove('transition-active');
+    }
+
+    // Handle page navigation
+    document.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', function(event) {
+            if (this.href && this.href.startsWith(window.location.origin)) {
+                event.preventDefault();
+                const url = this.href;
+                showOverlay();
+                setTimeout(() => window.location.href = url, 500);
+            }
+        });
+    });
+
+    // Hide overlay after page loads
+    setTimeout(hideOverlay, 500);
+
+    // Ensure videos play on page show
     window.addEventListener('pageshow', function() {
         document.querySelectorAll('video').forEach(video => video.play());
     });
 
-    // Add page transition effect
-    document.body.classList.add('page-transition');
-
-    document.querySelectorAll('a').forEach(link => {
-        if (link.href.includes(window.location.origin) && !link.href.includes('#')) {
-            link.addEventListener('click', function(event) {
-                event.preventDefault();
-                const url = this.href;
-                document.body.classList.add('fade-out');
-                setTimeout(() => window.location.href = url, 500);
-            });
-        }
-    });
+    // Language settings
+    const currentLang = getCookie('django_language') || detectUserLanguage() || 'en';
+    highlightActiveLanguage(currentLang);
+    updateLanguageSwitcherLinks();
+    cleanURL();
 });
 
 function getCookie(name) {
@@ -63,82 +77,71 @@ function detectUserLanguage() {
     return userLang.startsWith('ru') ? 'ru' : 'en';
 }
 
-document.querySelectorAll('.language-switch a').forEach(link => {
-    link.addEventListener('click', function(event) {
+// Handle scroll inertia
+document.querySelectorAll('.scrollable-container').forEach(container => {
+    let isScrolling;
+    let scrollSpeed = 0;
+    let inertiaFrame;
+
+    container.addEventListener('wheel', (event) => {
         event.preventDefault();
-        changeLanguage(this.dataset.lang);
-    });
-});
+        const delta = event.deltaY;
 
-document.addEventListener('DOMContentLoaded', function() {
-    const scrollableContainers = document.querySelectorAll('.scrollable-container');
-
-    scrollableContainers.forEach(container => {
-        let isScrolling;
-        let scrollSpeed = 0;
-        let inertiaFrame;
-
-        container.addEventListener('wheel', (event) => {
-            event.preventDefault();
-            const delta = event.deltaY;
-
-            // Apply a slight reverse scroll at the start
-            if (!isScrolling) {
-                scrollSpeed = -delta * 0.1; // Initial reverse scroll effect
-                isScrolling = true;
-            }
-
-            scrollSpeed += delta * 0.2; // Adjust speed increment for smoother effect
-
-            if (inertiaFrame) cancelAnimationFrame(inertiaFrame);
-            inertiaFrame = requestAnimationFrame(smoothScroll);
-        });
-
-        function smoothScroll() {
-            scrollSpeed *= 0.92; // Adjust damping for smoother deceleration
-
-            if (Math.abs(scrollSpeed) < 0.5) {
-                isScrolling = false;
-                return;
-            }
-
-            container.scrollTop += scrollSpeed;
-            inertiaFrame = requestAnimationFrame(smoothScroll);
+        if (!isScrolling) {
+            scrollSpeed = -delta * 0.1;
+            isScrolling = true;
         }
 
-        let touchStartY = 0;
-        let touchStartScrollTop = 0;
-        let touchSpeed = 0;
-        let touchFrame;
+        scrollSpeed += delta * 0.2;
 
-        container.addEventListener('touchstart', (event) => {
-            touchStartY = event.tTouches[0].clientY;
-            touchStartScrollTop = container.scrollTop;
-            touchSpeed = 0;
-            if (touchFrame) cancelAnimationFrame(touchFrame);
-        });
+        if (inertiaFrame) cancelAnimationFrame(inertiaFrame);
+        inertiaFrame = requestAnimationFrame(smoothScroll);
+    });
 
-        container.addEventListener('touchmove', (event) => {
-            const deltaY = event.touches[0].clientY - touchStartY;
-            touchSpeed = deltaY * 0.2; // Adjust speed increment for smoother effect
-            container.scrollTop = touchStartScrollTop - deltaY;
-        });
+    function smoothScroll() {
+        scrollSpeed *= 0.92;
 
-        container.addEventListener('touchend', () => {
-            if (Math.abs(touchSpeed) > 0.5) {
-                touchFrame = requestAnimationFrame(smoothTouchScroll);
-            }
-        });
+        if (Math.abs(scrollSpeed) < 0.5) {
+            isScrolling = false;
+            return;
+        }
 
-        function smoothTouchScroll() {
-            touchSpeed *= 0.92; // Adjust damping for smoother deceleration
+        container.scrollTop += scrollSpeed;
+        inertiaFrame = requestAnimationFrame(smoothScroll);
+    }
 
-            if (Math.abs(touchSpeed) < 0.5) {
-                return;
-            }
+    let touchStartY = 0;
+    let touchStartScrollTop = 0;
+    let touchSpeed = 0;
+    let touchFrame;
 
-            container.scrollTop -= touchSpeed;
+    container.addEventListener('touchstart', (event) => {
+        touchStartY = event.touches[0].clientY;
+        touchStartScrollTop = container.scrollTop;
+        touchSpeed = 0;
+        if (touchFrame) cancelAnimationFrame(touchFrame);
+    });
+
+    container.addEventListener('touchmove', (event) => {
+        const deltaY = event.touches[0].clientY - touchStartY;
+        touchSpeed = deltaY * 0.2;
+        container.scrollTop = touchStartScrollTop - deltaY;
+    });
+
+    container.addEventListener('touchend', () => {
+        if (Math.abs(touchSpeed) > 0.5) {
             touchFrame = requestAnimationFrame(smoothTouchScroll);
         }
     });
+
+    function smoothTouchScroll() {
+        touchSpeed *= 0.92;
+
+        if (Math.abs(touchSpeed) < 0.5) {
+            return;
+        }
+
+        container.scrollTop -= touchSpeed;
+        touchFrame = requestAnimationFrame(smoothTouchScroll);
+    }
 });

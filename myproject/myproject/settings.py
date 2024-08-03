@@ -17,22 +17,20 @@ from whitenoise import WhiteNoise
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+SECRETS_PATH = os.path.join(BASE_DIR, 'secrets.json')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-with open(os.path.join(BASE_DIR, 'secrets.json')) as f:
+with open(SECRETS_PATH) as f:
     secrets = json.load(f)
 
 SECRET_KEY = secrets['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = [ "potokyou.com" ]
-
-
+ALLOWED_HOSTS = [secrets['SERVER1'], secrets['SERVER2'], secrets['SERVER3']]
 # Application definition
 
 INSTALLED_APPS = [

@@ -5,43 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Main Page</title>
     {% load static %}
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'main/style.css' %}">
+    <link rel="stylesheet" href="{% static 'main/style.css' %}" id="base-style">
 </head>
 <body class="page-transition">
     <div class="background-video">
-        <video autoplay muted loop>
+        <video autoplay muted loop playsinline>
             <source src="{% static 'main/background.mp4' %}" type="video/mp4">
         </video>
     </div>
-    <div class="container-fluid h-100 d-flex flex-column justify-content-between">
-        <div class="row h-100">
-            <!-- Language Switch -->
-            <div class="language-switch language-container">
-                <a href="#" data-lang="en">en</a> / <a href="#" data-lang="ru">ru</a>
+    <div class="container-fluid">
+        <div class="language-switch language-container">
+            <a href="#" data-lang="en">en</a> / <a href="#" data-lang="ru">ru</a>
+        </div>
+        <div class="container-with-text-and-but">
+            <div class="text-block">
+                <h1 class="main-title" style="letter-spacing: 0.030em;">Potok VPN</h1>
+                <p class="main-description" style="letter-spacing: 0.030em;">We redefined network security</p>
             </div>
-            <!-- Text Block -->
-            <div id="container1" class="text-block">
-                <h1 class="main-title">Potok VPN</h1>
-                <p class="main-description">We redefined network security</p>
-            </div>
-            <!-- Button Block -->
-            <div id="container2" class="buttons-container">
+            <div class="buttons-container">
                 <button class="btn btn-dark custom-btn" id="androidButton" onclick="window.location.href='https://play.google.com/store/apps/details?id=org.potok.PotokVPN'">
                     <div class="icon">
-                        <img src="{% static 'main/icons/android.png' %}" alt="Android">
+                        <img src="{% static 'main/icons/android.svg' %}" alt="Android">
                     </div>
                     <div class="btn-text">
-                        <span class="btn-small-text">Download From</span>
+                        <span class="btn-small-text">Download from</span>
                         Google Play
                     </div>
                 </button>
                 <button class="btn btn-dark custom-btn" id="iosButton" onclick="window.location.href='https://apps.apple.com/app/potok-vpn/id6557075210'">
                     <div class="icon">
-                        <img src="{% static 'main/icons/ios.png' %}" alt="iOS">
+                        <img src="{% static 'main/icons/ios.svg' %}" alt="iOS">
                     </div>
                     <div class="btn-text">
-                        <span class="btn-small-text">Download From</span>
+                        <span class="btn-small-text">Download from</span>
                         App Store
                     </div>
                 </button>
@@ -56,7 +52,7 @@
                 </button>
                 <button class="btn btn-dark custom-btn" id="macosButton" onclick="window.location.href='https://github.com/hayashidevs/potokvpn-client/releases/latest/download/PotokVPN.dmg'">
                     <div class="icon">
-                        <img src="{% static 'main/icons/macos.png' %}" alt="macOS">
+                        <img src="{% static 'main/icons/macos.svg' %}" alt="macOS">
                     </div>
                     <div class="btn-text">
                         <span class="btn-small-text">Download for</span>
@@ -65,13 +61,13 @@
                 </button>
             </div>
         </div>
-        <!-- License Agreement Links -->
         <div class="license-link">
-            <a href="/privacy/">License Agreement</a> | <a href="/privacy-mobile-app/">Mobile App Policy</a>
+            <a href="/privacy/">License Agreement</a><a href="/privacy-mobile-app/">Mobile App Policy</a>
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'main/script.js' %}"></script>
+    <script src="{% static 'main/responsive.js' %}"></script>
 </body>
 </html>

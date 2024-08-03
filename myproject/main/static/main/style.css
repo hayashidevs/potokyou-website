@@ -1,82 +1,82 @@
-/* General Styles */
+/* Base Styles */
 body, html {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
-    font-family: 'Helvetica', 'Arial', sans-serif; /* Apple minimalistic font */
+    font-family: 'Helvetica', 'Arial', sans-serif;
     color: #333;
-    overflow: hidden; /* Prevent scrollbars */
+    background-color: black; /* Ensure black background initially */
+    overflow-x: hidden;
+}
+
+/* Responsive Images */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Full-screen Overlay for Transitions */
+.transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1000;
+    transition: opacity 0.5s ease;
+}
+
+/* Activate overlay during transitions */
+.transition-active .transition-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Flexbox Layout */
+.container-fluid {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    opacity: 0;
+    animation: fadeIn 1s ease-in-out forwards;
 }
 
 /* Keyframes for animations */
-@keyframes slideInFromTop {
-    0% { transform: translateY(-100%); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideInFromLeft {
-    0% { transform: translateX(-100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes slideInFromBottom {
-    0% { transform: translateY(100%); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideInFromRight {
-    0% { transform: translateX(100%); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-
 @keyframes fadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-}
-
-/* Animations for specific elements */
-.language-switch.language-container {
-    animation: slideInFromTop 1s ease-out;
-}
-
-.main-title {
-    animation: slideInFromLeft 1s ease-out;
-}
-
-.main-description {
-    animation: slideInFromBottom 1s ease-out;
-}
-
-.license-link {
-    animation: slideInFromBottom 1s ease-out;
-}
-
-#androidButton, #windowsButton {
-    animation: slideInFromBottom 1s ease-out;
-}
-
-#iosButton, #macosButton {
-    animation: slideInFromRight 1s ease-out;
-}
-
-.content-container {
-    animation: fadeIn 1s ease-in-out;
-}
-
-/* Page transition animations */
-.page-transition {
-    animation: pageFadeIn 1s ease-in-out;
+    0% {
+        opacity: 0;
+        background-color: black; /* Set initial black background */
+    }
+    100% {
+        opacity: 1;
+        background-color: transparent;
+    }
 }
 
 @keyframes pageFadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 0;
+        background-color: black;
+    }
+    100% {
+        opacity: 1;
+        background-color: transparent;
+    }
 }
 
 @keyframes pageFadeOut {
-    0% { opacity: 1; }
-    100% { opacity: 0; }
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        background-color: black;
+    }
 }
 
 .fade-out {
@@ -97,13 +97,7 @@ body, html {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.container-fluid {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    opacity: 1; /* Set to fully visible */
+    pointer-events: none; /* Ensure no interaction with video */
 }
 
 .text-white {
@@ -115,56 +109,57 @@ body, html {
 }
 
 .custom-btn {
-    width: auto; /* Set the width to auto to hug the content */
-    min-width: 186px; /* Ensure minimum width */
-    height: auto; /* Set the height to auto to hug the content */
-    min-height: 60px; /* Ensure minimum height */
+    width: auto;
+    min-width: 186px;
+    height: auto;
+    min-height: 60px;
     padding: 14px;
     border-radius: 20px;
-    color: lightgray; /* Light gray text */
+    color: lightgray;
     display: flex;
     align-items: center;
     background-color: #333;
     border: none;
     font-size: 18px;
     position: relative;
-    text-decoration: none; /* Ensure links do not have underline */
-    font-family: 'Helvetica', 'Arial', sans-serif; /* Apple minimalistic font */
-    opacity: 1; /* Set to fully visible */
+    text-decoration: none;
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    opacity: 1;
 }
 
 .btn-text {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-left: 46px; /* Move text 12px to the right from the icon block */
-    font-weight: bold; /* Make text bold */
+    margin-left: 46px;
+    font-weight: bold;
 }
 
 .btn-small-text {
-    font-size: 12px; /* Smaller text size */
-    color: rgba(211, 211, 211, 0.5); /* Light gray with 50% opacity */
-    line-height: 12px; /* 12px line height */
-    margin-bottom: 2px; /* Ensure 2px gap from main text */
-    font-weight: bold; /* Make text bold */
+    font-size: 12px;
+    color: rgba(211, 211, 211, 0.5);
+    line-height: 12px;
+    margin-bottom: 2px;
+    font-weight: bold;
 }
 
-.custom-btn:hover, .custom-btn:focus {
+.custom-btn:hover,
+.custom-btn:focus {
     background-color: #555;
 }
 
 .custom-btn .icon {
-    width: 34px; /* Set the icon block width */
-    height: 34px; /* Set the icon block height */
+    width: 34px;
+    height: 34px;
     position: absolute;
     left: 14px;
     bottom: 14px;
 }
 
 .custom-btn .icon img {
-    width: 100%; /* Ensure the image fits the icon block */
-    height: 100%; /* Ensure the image fits the icon block */
-    object-fit: cover; /* Ensure the image is resized properly */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 #languageButton.custom-btn {
@@ -185,29 +180,25 @@ body, html {
     position: relative;
 }
 
-#languageButton.custom-btn:hover, #languageButton.custom-btn:focus {
+#languageButton.custom-btn:hover,
+#languageButton.custom-btn:focus {
     background-color: #555;
 }
 
 .buttons-container {
-    position: absolute;
-    bottom: 68px;
-    right: 182px;
+    margin-top: 40px;
     display: grid;
-    grid-template-columns: repeat(2, auto); /* Two columns */
-    grid-template-rows: repeat(2, auto); /* Two rows */
-    gap: 12px; /* Ensure the gap between buttons and rows is exactly 12px */
+    grid-template-columns: repeat(2, auto);
+    grid-template-rows: repeat(2, auto);
+    gap: 12px;
 }
 
 .text-block {
-    position: absolute;
-    bottom: 68px;
-    left: 182px;
-    width: 636px;
+    width: 30vw;
 }
 
 .main-title {
-    width: 100%; /* Ensure the title spans the full width */
+    width: 100%;
     font-family: 'Inter', sans-serif;
     font-size: 62px;
     font-weight: 600;
@@ -215,8 +206,8 @@ body, html {
     letter-spacing: -0.025em;
     text-align: left;
     color: white;
-    white-space: nowrap; /* Ensure the title stays on one line */
-    opacity: 1; /* Set to fully visible */
+    white-space: nowrap;
+    opacity: 1;
 }
 
 .main-description {
@@ -227,15 +218,15 @@ body, html {
     line-height: 20.8px;
     text-align: left;
     color: lightgray;
-    margin-top: 24px; /* Ensure the gap is counted from the bottom of the title */
-    opacity: 1; /* Set to fully visible */
+    margin-top: 24px;
+    opacity: 1;
 }
 
 .language-container {
     position: absolute;
     top: 68px;
-    left: 182px;
-    opacity: 1; /* Set to fully visible */
+    left: 6vw;
+    opacity: 1;
 }
 
 .language-switch {
@@ -247,7 +238,7 @@ body, html {
     text-decoration: none;
     color: lightgray;
     cursor: pointer;
-    font-family: 'Courier New', Courier, monospace; /* Apply code-like font */
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .language-switch a.active {
@@ -261,29 +252,30 @@ body, html {
 }
 
 .license-link {
-    position: absolute; /* Change to absolute */
-    bottom: 10px; /* Ensure it's at the bottom */
-    width: 100%; /* Center horizontally */
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
     color: lightgray;
     text-decoration: none;
     font-size: 16px;
     display: flex;
     justify-content: center;
-    opacity: 1; /* Set to fully visible */
+    opacity: 1;
 }
 
 .license-link a {
     color: lightgray;
     text-decoration: none;
-    margin: 0 10px; /* Add margin for spacing */
-    font-family: 'Courier New', Courier, monospace; /* Apply code-like font */
+    margin: 0 10px;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .license-link a:hover {
     text-decoration: underline;
 }
 
-h1, h2 {
+h1,
+h2 {
     color: #111;
 }
 
@@ -307,23 +299,230 @@ p {
     background: rgba(255, 255, 255, 0.9);
     padding: 2rem;
     border-radius: 8px;
-    opacity: 1; /* Set to fully visible */
-    margin-top: 20px; /* Ensure 20px margin from the top */
+    opacity: 1;
+    margin-top: 20px;
 }
 
-@media (min-width: 768px) {
-    .content-container {
-        padding: 4rem;
+@media (min-width: 1024px) {
+    .container-with-text-and-but {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-left: 6vw;
+        margin-right: 6vw;
+        width: calc(100vw - 12vw);
+        position: absolute;
+        bottom: 67px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 853px) {
+    .container-with-text-and-but {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-left: 4vw;
+        margin-right: 4vw;
+        width: calc(100vw - 8vw);
+        position: absolute;
+        bottom: 67px;
+    }
+
+    .custom-btn {
+        min-width: 150px;
+        width: 154px;
+        height: 57px;
+        min-height: 60px;
+        padding: 14px;
+        border-radius: 20px;
+        color: lightgray;
+        display: flex;
+        align-items: center;
+        background-color: #333;
+        border: none;
+        font-size: 18px;
+        position: relative;
+        text-decoration: none;
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        opacity: 1;
+    }
+
+    .license-link {
+        position: absolute;
+        bottom: 10px;
+        width: 100%;
+        color: lightgray;
+        text-decoration: none;
+        font-size: 12px;
+        display: flex;
+        justify-content: center;
+        opacity: 1;
+    }
+
+    .buttons-container {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: repeat(2, auto);
+        grid-template-rows: repeat(2, auto);
+        gap: 12px;
+    }
+
+    .main-description {
+        width: 37vw;
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 20.8px;
+        text-align: left;
+        color: lightgray;
+        margin-top: -10px;
+        opacity: 1;
+    }
+
+    .custom-btn .icon {
+        width: 24px;
+        height: 24px;
+        position: absolute;
+        left: 14px;
+        bottom: 18px;
+    }
+
+    .btn-text {
+        font-size: 13px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-left: 38px;
+        font-weight: bold;
+    }
+
+    .main-title {
+        width: 100%;
+        font-family: 'Inter', sans-serif;
+        font-size: 42px;
+        font-weight: 600;
+        line-height: 60px;
+        letter-spacing: -0.025em;
+        text-align: left;
+        color: white;
+        white-space: nowrap;
+        opacity: 1;
+    }
+
+    .language-container {
+        left: 4vw;
+    }
+}
+
+@media (min-width: 300px) and (max-width: 430px) {
+    .container-with-text-and-but {
+        display: block;
+        margin-left: 3vw;
+        margin-right: 3vw;
+        width: calc(100vw - 6vw);
+        position: absolute;
+        bottom: 67px;
+    }
+
+    .text-block {
+        width: auto;
+        text-align: center;
+    }
+
+    .main-title {
+        text-align: center;
+        width: 100%;
+        font-family: 'Inter', sans-serif;
+        font-size: 42px;
+        font-weight: 600;
+        line-height: 60px;
+        letter-spacing: -0.025em;
+        color: white;
+        white-space: nowrap;
+        opacity: 1;
+    }
+
+    .main-description {
+        text-align: center;
+        width: 88vw;
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 20.8px;
+        color: lightgray;
+        margin-top: 24px;
+        opacity: 1;
+    }
+
+    .custom-btn .icon {
+        width: 24px;
+        height: 24px;
+        position: absolute;
+        left: 14px;
+        bottom: 17px;
+    }
+
+    .main-description {
+        width: auto;
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 20.8px;
+        /* text-align: center; */
+        color: lightgray;
+        margin-top: -10px;
+        opacity: 1;
+    }
+
+    .custom-btn {
+        min-width: 169px;
+        width: auto;
+        height: 54px;
+        min-height: 54px;
+        padding: 14px;
+        border-radius: 20px;
+        color: lightgray;
+        display: flex;
+        align-items: center;
+        background-color: #333;
+        border: none;
+        font-size: 18px;
+        position: relative;
+        text-decoration: none;
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        opacity: 1;
+    }
+
+    .license-link {
+        position: absolute;
+        bottom: 10px;
+        width: 100%;
+        color: lightgray;
+        text-decoration: none;
+        font-size: 12px;
+        display: flex;
+        opacity: 1;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .btn-text {
+        font-size: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-left: 46px;
+        font-weight: bold;
     }
 }
 
 /* Custom scrollable container */
 .scrollable-container {
-    max-height: 80vh; /* Adjust height as needed */
+    max-height: 80vh;
     overflow-y: auto;
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: #ddd transparent; /* Firefox */
-    -webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS */
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Hide default scrollbar for Chrome, Safari and Opera */
@@ -334,8 +533,8 @@ p {
 .scrollable-container::-webkit-scrollbar-thumb {
     background-color: #ddd;
     border-radius: 10px;
-    border: 3px solid transparent; /* Padding around scrollbar thumb */
-    background-clip: content-box; /* Ensures padding is visible */
+    border: 3px solid transparent;
+    background-clip: content-box;
 }
 
 .scrollable-container::-webkit-scrollbar-track {
@@ -358,16 +557,17 @@ p {
     margin-top: 20px;
 }
 
-.custom-table th, .custom-table td {
-    border: 1px solid #000; /* Black border */
+.custom-table th,
+.custom-table td {
+    border: 1px solid #000;
     padding: 8px;
     text-align: left;
 }
 
 .custom-table th {
-    background-color: #f2f2f2; /* Light grey background for header */
+    background-color: #f2f2f2;
 }
 
 .custom-table td {
-    background-color: #fff; /* White background for cells */
+    background-color: #fff;
 }
