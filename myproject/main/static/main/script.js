@@ -1,22 +1,41 @@
+const overlay = document.querySelector('.page-overlay');
+
+// Hide overlay on page load
+function hideOverlay() {
+    overlay.classList.add('page-active');
+    setTimeout(() => overlay.style.display = "none", 500);
+}
+
+window.addEventListener('pageshow', function(event) {
+    setTimeout(hideOverlay, 500);
+});
+
+
 document.addEventListener('DOMContentLoaded', function() {
-    const overlay = document.querySelector('.transition-overlay');
 
     // Show overlay during navigation
     function showOverlay() {
-        overlay.classList.add('transition-active');
+        overlay.style.display = '';
+        requestAnimationFrame(() => {
+            overlay.classList.remove('page-active');
+        });
     }
 
     // Hide overlay on page load
     function hideOverlay() {
-        overlay.classList.remove('transition-active');
+        overlay.classList.add('page-active');
+        setTimeout(() => overlay.style.display = "none", 500);
     }
+
+
+    const overlay = document.querySelector('.page-overlay');
 
     // Handle page navigation
     document.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', function(event) {
-            if (this.href && this.href.startsWith(window.location.origin)) {
+            if (link.href && link.href.startsWith(window.location.origin)) {
                 event.preventDefault();
-                const url = this.href;
+                const url = link.href;
                 showOverlay();
                 setTimeout(() => window.location.href = url, 500);
             }
@@ -25,11 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hide overlay after page loads
     setTimeout(hideOverlay, 500);
-
-    // Ensure videos play on page show
-    window.addEventListener('pageshow', function() {
-        document.querySelectorAll('video').forEach(video => video.play());
-    });
 
     // Language settings
     const currentLang = getCookie('django_language') || detectUserLanguage() || 'en';
