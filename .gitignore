@@ -13,3 +13,8 @@ myproject/myproject/__pycache__/
 
 # Ignore secrets
 myproject/secrets.json
+
+myproject/main/config.py
+
+# Ignore .conf files
+myproject/main/temp_configs/*.conf

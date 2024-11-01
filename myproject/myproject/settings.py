@@ -28,7 +28,7 @@ with open(SECRETS_PATH) as f:
 
 SECRET_KEY = secrets['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [secrets['SERVER1'], secrets['SERVER2'], secrets['SERVER3']]
 # Application definition
@@ -140,3 +140,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+YOOKASSA_SHOP_ID = secrets['YOOKASSA_SHOP_ID']
+YOOKASSA_SECRET_KEY = secrets['YOOKASSA_SECRET_KEY']
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
