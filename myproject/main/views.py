@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, Http404, FileResponse
+from django.http import HttpResponse, Http404, FileResponse, JsonResponse
 import os
 import json
 import requests
@@ -258,3 +258,91 @@ def create_payment(request, client_id, rate_id):
 
     except Exception as e:
         return HttpResponse("Error creating payment with YooKassa.", status=400)
+    
+
+def telegram_create_payment(request, client_id, rate_id):
+    # Fetch client and rate data
+    client_url = f"{settings.DJANGO_API_URL}/api/clients/{client_id}/"
+    rate_url = f"{settings.DJANGO_API_URL}/api/rates/{rate_id}/"
+
+    client_response = requests.get(client_url)
+    rate_response = requests.get(rate_url)
+
+    if client_response.status_code != 200 or rate_response.status_code != 200:
+        return HttpResponse("Error fetching client or rate data.", status=400)
+
+    client_data = client_response.json()
+    rate_data = rate_response.json()
+
+    try:
+        payment = Payment.create({
+            "amount": {
+                "value": str(rate_data["price"]),
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": request.build_absolute_uri('/telegram/thanks/')
+            },
+            "capture": True,
+            "description": f"Telegram subscription payment for {rate_data['name']}"
+        })
+
+        confirmation_url = getattr(payment.confirmation, 'confirmation_url', None)
+        if confirmation_url:
+            request.session['telegram_payment_id'] = str(payment.id)
+            request.session['telegram_client_id'] = client_id
+            request.session['telegram_rate_id'] = rate_id
+            request.session.save()
+            return redirect(confirmation_url)
+        else:
+            return HttpResponse("Error: confirmation URL missing in payment response.", status=500)
+
+    except Exception as e:
+        return HttpResponse("Error creating payment for Telegram.", status=400)
+    
+@csrf_exempt
+def telegram_thanks_view(request):
+    client_id = request.session.get('telegram_client_id')
+    rate_id = request.session.get('telegram_rate_id')
+    payment_id = request.session.get('telegram_payment_id')
+    subscription_id = request.session.get('telegram_subscription_id')
+
+    if not all([client_id, rate_id, payment_id, subscription_id]):
+        return HttpResponse("Session data is missing. Please restart the payment process.", status=400)
+
+    # Generate config using WGAPI and send to Telegram bot
+    request_data = json.dumps({"subscription_id": subscription_id})
+    response = requests.post(f"{settings.WGAPI_URL}/wireguard/add_user/", data=request_data)
+
+    if response.status_code == 200 and response.json().get("status") == "success":
+        config_content = response.json().get("config_content")
+        config_filename = f"{subscription_id}.conf"
+        config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+
+        with open(config_path, 'w') as config_file:
+            config_file.write(config_content)
+
+        secret_key = settings.SECRET_KEY
+        hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Config generated. Return to Telegram to get it.',
+            'download_link': f"/telegram/download-config/{config_filename}/{hash_digest}/"
+        })
+    else:
+        return HttpResponse("Error creating configuration file.", status=400)
+    
+def telegram_download_config(request, config_filename, hash_digest):
+    secret_key = settings.SECRET_KEY
+    calculated_hash = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+
+    if hash_digest != calculated_hash:
+        return HttpResponse("Unauthorized access.", status=403)
+
+    config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+    if os.path.exists(config_path):
+        return FileResponse(open(config_path, 'rb'), as_attachment=True, filename=config_filename)
+    else:
+        raise Http404("Config file not found.")
