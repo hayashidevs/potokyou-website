@@ -1,14 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Thank You</title>
-</head>
-<body>
-    <h1>Thank you for your payment!</h1>
-    <p>Your subscription has been successfully created.</p>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Фон с зацикленными конфетти</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body, html {
+      overflow: hidden;
+      height: 100%;
+    }
 
-    <!-- Display a secure download link for the config file -->
-    <a href="{{ download_link }}" download>Download your configuration file</a>
+    .font-bold {
+        z-index: 99;
+    }
+  </style>
+</head>
+<body class="bg-blue-500 mt-50 flex items-center justify-center">
+  <canvas id="confettiCanvas" class="absolute inset-0"></canvas>
+    <div>
+        <div class="flex items-center justify-center">
+            <div class="text-white text-4xl font-bold">Оплата прошла успешно!</div>
+          </div>
+          <div class="flex items-center justify-center">
+            <div class="text-white text-4xl font-bold">Вернитесь в бота, он выдаст вам конфигурацию!</div>
+          </div>
+    </div>
+
+  <script>
+    const canvas = document.getElementById("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Яркие цвета для конфетти
+    const confettiColors = ["#FF5733", "#FFC300", "#DAF7A6", "#FF33FF", "#33FF57", "#33C4FF", "#FF3333", "#FFFF33"];
+    const confettiArray = [];
+
+    class Confetti {
+    constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 8 + 4; // Размеры квадратов
+        this.speedY = Math.random() * 2 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+        this.angle = Math.random() * 360; // начальный угол для вращения
+        this.rotationSpeed = Math.random() * 5 - 2.5; // скорость вращения
+    }
+
+    update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        this.angle += this.rotationSpeed;
+
+        // Перезапуск конфетти сверху, если падает вниз экрана
+        if (this.y > canvas.height) {
+        this.y = 0;
+        this.x = Math.random() * canvas.width;
+        }
+        if (this.x > canvas.width) {
+        this.x = 0;
+        }
+        if (this.x < 0) {
+        this.x = canvas.width;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate((this.angle * Math.PI) / 180); // вращаем квадрат
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+        ctx.restore();
+    }
+    }
+
+    function initConfetti() {
+    for (let i = 0; i < 150; i++) {
+        confettiArray.push(new Confetti());
+    }
+    }
+
+    function animateConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    confettiArray.forEach((confetti) => {
+        confetti.update();
+        confetti.draw();
+    });
+
+    requestAnimationFrame(animateConfetti);
+    }
+
+    initConfetti();
+    animateConfetti();
+
+    window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    });
+
+  </script>
 </body>
 </html>

@@ -262,8 +262,8 @@ def create_payment(request, client_id, rate_id):
 
 def telegram_create_payment(request, client_id, rate_id):
     # Fetch client and rate data
-    client_url = f"{settings.DJANGO_API_URL}/api/clients/{client_id}/"
-    rate_url = f"{settings.DJANGO_API_URL}/api/rates/{rate_id}/"
+    client_url = f"{DJANGO_API_URL}/api/clients/{client_id}/"
+    rate_url = f"{DJANGO_API_URL}/api/rates/{rate_id}/"
 
     client_response = requests.get(client_url)
     rate_response = requests.get(rate_url)
@@ -313,7 +313,7 @@ def telegram_thanks_view(request):
 
     # Generate config using WGAPI and send to Telegram bot
     request_data = json.dumps({"subscription_id": subscription_id})
-    response = requests.post(f"{settings.WGAPI_URL}/wireguard/add_user/", data=request_data)
+    response = requests.post(f"{WGAPI_URL}/wireguard/add_user/", data=request_data)
 
     if response.status_code == 200 and response.json().get("status") == "success":
         config_content = response.json().get("config_content")
@@ -326,11 +326,7 @@ def telegram_thanks_view(request):
         secret_key = settings.SECRET_KEY
         hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
 
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Config generated. Return to Telegram to get it.',
-            'download_link': f"/telegram/download-config/{config_filename}/{hash_digest}/"
-        })
+        return render(request, 'thanks.html')
     else:
         return HttpResponse("Error creating configuration file.", status=400)
     
@@ -346,3 +342,51 @@ def telegram_download_config(request, config_filename, hash_digest):
         return FileResponse(open(config_path, 'rb'), as_attachment=True, filename=config_filename)
     else:
         raise Http404("Config file not found.")
+    
+
+# Webhook to handle asynchronous payment confirmation
+@csrf_exempt
+def yookassa_webhook(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+
+        payment_id = data.get("object", {}).get("id")
+        payment_status = data.get("object", {}).get("status")
+
+        # Check if payment succeeded
+        if payment_status == 'succeeded' and payment_id == request.session.get('telegram_payment_id'):
+            client_id = request.session.get('telegram_client_id')
+            rate_id = request.session.get('telegram_rate_id')
+            subscription_id = process_subscription(client_id, rate_id, request)
+            if subscription_id is None:
+                return HttpResponse("Error processing subscription.", status=400)
+            request.session['telegram_subscription_id'] = str(subscription_id)
+
+            # Generate config using WGAPI
+            request_data = json.dumps({"subscription_id": subscription_id})
+            response = requests.post(f"{settings.WGAPI_URL}/wireguard/add_user/", data=request_data)
+
+            if response.status_code == 200 and response.json().get("status") == "success":
+                config_content = response.json().get("config_content")
+                config_filename = f"{subscription_id}.conf"
+                config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+
+                with open(config_path, 'w') as config_file:
+                    config_file.write(config_content)
+
+                # Generate a secure hash for the download link
+                secret_key = settings.SECRET_KEY
+                hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+
+                # Respond indicating the config is ready
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Config generated. Return to Telegram to get it.',
+                    'download_link': f"/telegram/download-config/{config_filename}/{hash_digest}/"
+                })
+            else:
+                return HttpResponse("Error creating configuration file via webhook.", status=400)
+
+        return JsonResponse({"status": "ignored", "message": "Payment status not succeeded or unmatched payment ID."}, status=400)
+
+    return HttpResponse(status=405)
