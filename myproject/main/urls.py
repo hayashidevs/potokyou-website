@@ -12,7 +12,7 @@ urlpatterns = [
     path('create-payment/<uuid:client_id>/<uuid:rate_id>/', views.create_payment, name='create_payment'),
     path('thanks/', views.thanks_view, name='thanks_view'),
     path('download-config/<str:config_filename>/<str:hash_digest>/', views.download_config, name='download_config'),
-    path('telegram/create-payment/<str:client_id>/<str:rate_id>/', views.telegram_create_payment, name='telegram_create_payment'),
+    path('telegram/create-payment/<str:client_id>/<str:rate_id>/<str:telegram_id>/', views.telegram_create_payment, name='telegram_create_payment'),
     path('telegram/thanks/', views.telegram_thanks_view, name='telegram_thanks'),
     path('telegram/download-config/<str:config_filename>/<str:hash_digest>/', views.telegram_download_config, name='telegram_download_config'),
 ]

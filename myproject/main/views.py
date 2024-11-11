@@ -9,6 +9,7 @@ from .config import DJANGO_API_URL, WGAPI_URL
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.conf import settings
+import aiohttp
 
 from yookassa import Configuration, Payment
 
@@ -260,10 +261,10 @@ def create_payment(request, client_id, rate_id):
         return HttpResponse("Error creating payment with YooKassa.", status=400)
     
 
-def telegram_create_payment(request, client_id, rate_id):
+def telegram_create_payment(request, client_id, rate_id, telegram_id):
     # Fetch client and rate data
-    client_url = f"{settings.DJANGO_API_URL}/api/clients/{client_id}/"
-    rate_url = f"{settings.DJANGO_API_URL}/api/rates/{rate_id}/"
+    client_url = f"{DJANGO_API_URL}/api/clients/{client_id}/"
+    rate_url = f"{DJANGO_API_URL}/api/rates/{rate_id}/"
 
     client_response = requests.get(client_url)
     rate_response = requests.get(rate_url)
@@ -288,9 +289,12 @@ def telegram_create_payment(request, client_id, rate_id):
             "description": f"Telegram subscription payment for {rate_data['name']}"
         })
 
+        print(payment.confirmation)
+
         confirmation_url = getattr(payment.confirmation, 'confirmation_url', None)
         if confirmation_url:
             request.session['telegram_payment_id'] = str(payment.id)
+            request.session['telegram_id'] = telegram_id
             request.session['telegram_client_id'] = client_id
             request.session['telegram_rate_id'] = rate_id
             request.session.save()
@@ -301,39 +305,87 @@ def telegram_create_payment(request, client_id, rate_id):
     except Exception as e:
         return HttpResponse("Error creating payment for Telegram.", status=400)
     
+    
 @csrf_exempt
 def telegram_thanks_view(request):
     client_id = request.session.get('telegram_client_id')
     rate_id = request.session.get('telegram_rate_id')
     payment_id = request.session.get('telegram_payment_id')
-    subscription_id = request.session.get('telegram_subscription_id')
 
-    if not all([client_id, rate_id, payment_id, subscription_id]):
-        return HttpResponse("Session data is missing. Please restart the payment process.", status=400)
+    try:
+        # Получение тарифов
+        response = requests.get(f"{DJANGO_API_URL}/api/rates/", params={'id': rate_id})
+        if response.status_code != 200:
+            return HttpResponse("Failed to get rates.", status=500)
 
-    # Generate config using WGAPI and send to Telegram bot
-    request_data = json.dumps({"subscription_id": subscription_id})
-    response = requests.post(f"{settings.WGAPI_URL}/wireguard/add_user/", data=request_data)
+        rates = response.json()
+        if not rates:
+            return HttpResponse("No rates found.", status=404)
 
-    if response.status_code == 200 and response.json().get("status") == "success":
-        config_content = response.json().get("config_content")
-        config_filename = f"{subscription_id}.conf"
-        config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+        # Поиск соответствующего тарифа
+        dayamount = None
+        for rate in rates:
+            if rate['id'] == rate_id:
+                dayamount = rate['dayamount']
+                break
 
-        with open(config_path, 'w') as config_file:
-            config_file.write(config_content)
+        if dayamount is None or not isinstance(dayamount, int):
+            return HttpResponse("Invalid day amount for the given rate.", status=400)
 
-        secret_key = settings.SECRET_KEY
-        hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+        # Расчёт дат подписки
+        date_start = datetime.now()
+        date_end = date_start + timedelta(days=dayamount)
+        date_start_str = date_start.strftime("%Y-%m-%dT%H:%M:%S")
+        date_end_str = date_end.strftime("%Y-%m-%dT%H:%M:%S")
 
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Config generated. Return to Telegram to get it.',
-            'download_link': f"/telegram/download-config/{config_filename}/{hash_digest}/"
-        })
-    else:
-        return HttpResponse("Error creating configuration file.", status=400)
-    
+        # Создание подписки
+        subscription_data = {
+            'clientid': client_id,
+            'rateid': rate_id,
+            'datestart': date_start_str,
+            'dateend': date_end_str,
+            'name': "Device_Telegram_3"
+        }
+        subscription_response = requests.post(f"{DJANGO_API_URL}/api/subscriptions/", json=subscription_data)
+        if subscription_response.status_code != 201:
+            return HttpResponse("Failed to create subscription.", status=500)
+
+        subscription_json = subscription_response.json()
+        subscription_id = subscription_json.get('id')
+
+        if not all([client_id, rate_id, payment_id, subscription_id]):
+            return HttpResponse("Session data is missing. Please restart the payment process.", status=400)
+
+        # Генерация конфигурации через WGAPI
+        request_data = json.dumps({"subscription_id": subscription_id})
+        response = requests.post(f"{WGAPI_URL}/wireguard/add_user/", data=request_data)
+
+        if response.status_code == 200 and response.json().get("status") == "success":
+            config_content = response.json().get("config_content")
+            config_filename = f"{subscription_id}.conf"
+            config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+
+            # Запись конфигурации в файл
+            with open(config_path, 'w') as config_file:
+                config_file.write(config_content)
+
+            # Генерация ссылки для скачивания
+            secret_key = settings.SECRET_KEY
+            hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Config generated. Return to Telegram to get it.',
+                'download_link': f"/telegram/download-config/{config_filename}/{hash_digest}/"
+            })
+        else:
+            return HttpResponse("Error creating configuration file.", status=400)
+
+    except Exception as e:
+        # Подробная ошибка для отладки
+        return HttpResponse(f"Internal Server Error: {str(e)}", status=500)
+
+
 def telegram_download_config(request, config_filename, hash_digest):
     secret_key = settings.SECRET_KEY
     calculated_hash = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
