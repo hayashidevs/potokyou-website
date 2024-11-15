@@ -10,6 +10,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.conf import settings
 
+from django.core.cache import cache
+
 from yookassa import Configuration, Payment
 
 import hmac
@@ -77,15 +79,28 @@ def process_subscription(client_id, rate_id, request):
     subscription_url = f"{DJANGO_API_URL}/api/subscriptions/"
     datestart = datetime.now()
 
-    # Fetch rate data to determine subscription duration
+    # Fetch client data for meaningful naming
+    client_response = requests.get(f"{DJANGO_API_URL}/api/clients/{client_id}/")
+    if client_response.status_code == 200:
+        client_data = client_response.json()
+        client_name = client_data.get("name", f"Client_{client_id}")  # Fallback if name is missing
+    else:
+        print("Error fetching client data:", client_response.status_code)
+        return None
+
+    # Fetch rate data to determine subscription duration and meaningful name
     rate_data_response = requests.get(f"{DJANGO_API_URL}/api/rates/{rate_id}/")
     if rate_data_response.status_code == 200:
         rate_data = rate_data_response.json()
+        rate_name = rate_data.get("name", f"Rate_{rate_id}")  # Fallback if name is missing
         day_amount = rate_data.get("dayamount", 0)
         dateend = datestart + timedelta(days=day_amount)
     else:
         print("Error fetching rate data:", rate_data_response.status_code)
         return None
+
+    # Create a meaningful subscription name
+    subscription_name = f"{client_name}_Sub_{rate_name}_{datestart.strftime('%Y-%m-%d')}"
 
     # Prepare data for creating the subscription
     subscription_data = {
@@ -93,7 +108,7 @@ def process_subscription(client_id, rate_id, request):
         "rateid": rate_id,
         "datestart": datestart.isoformat(),
         "dateend": dateend.isoformat(),
-        "name": "Subscription name",  # Optional name field
+        "name": subscription_name,
         "is_used": False,
     }
 
@@ -104,11 +119,12 @@ def process_subscription(client_id, rate_id, request):
         request.session['subscription_id'] = subscription_id  # Save to session
         request.session.save()  # Ensure session is saved
 
-        print(f"Subscription created with ID: {subscription_id}")
+        print(f"Subscription created with ID: {subscription_id} and Name: {subscription_name}")
         return subscription_id
     else:
         print("Error creating subscription:", response.status_code, response.json())
         return None
+
     
 @api_view(['POST'])
 def update_subscription_dateend(request):
@@ -192,7 +208,7 @@ def thanks_view(request):
             context = {
                 'download_link': download_link,
             }
-            return render(request, 'thanks.html', context)
+            return render(request, 'thanks_website.html', context)
         else:
             print("Error creating configuration file from WGAPI:", response.status_code, response.json())
             return HttpResponse("Error creating configuration file.", status=400)
@@ -260,46 +276,92 @@ def create_payment(request, client_id, rate_id):
         return HttpResponse("Error creating payment with YooKassa.", status=400)
     
 
-def telegram_create_payment(request, client_id, rate_id):
-    # Fetch client and rate data
-    client_url = f"{DJANGO_API_URL}/api/clients/{client_id}/"
-    rate_url = f"{DJANGO_API_URL}/api/rates/{rate_id}/"
-
-    client_response = requests.get(client_url)
-    rate_response = requests.get(rate_url)
-
-    if client_response.status_code != 200 or rate_response.status_code != 200:
-        return HttpResponse("Error fetching client or rate data.", status=400)
-
-    client_data = client_response.json()
-    rate_data = rate_response.json()
-
+@csrf_exempt
+def telegram_create_payment(request):
     try:
-        payment = Payment.create({
-            "amount": {
-                "value": str(rate_data["price"]),
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": request.build_absolute_uri('/telegram/thanks/')
-            },
-            "capture": True,
-            "description": f"Telegram subscription payment for {rate_data['name']}"
-        })
+        # Parse JSON request body
+        data = json.loads(request.body)
+        client_id = data.get("client_id")
+        rate_id = data.get("rate_id")
+        type_payment = data.get("type_payment")
+        subscription_id = data.get("subscription_id")  # Used for renewal
+        ref_client = data.get("ref_client")  # Referral client (optional)
 
-        confirmation_url = getattr(payment.confirmation, 'confirmation_url', None)
-        if confirmation_url:
-            request.session['telegram_payment_id'] = str(payment.id)
-            request.session['telegram_client_id'] = client_id
-            request.session['telegram_rate_id'] = rate_id
-            request.session.save()
+        # Validate required parameters
+        if not client_id or not rate_id or not type_payment:
+            return HttpResponse("Missing required parameters.", status=400)
+
+        # Fetch client and rate data
+        client_url = f"{DJANGO_API_URL}/api/clients/{client_id}/"
+        rate_url = f"{DJANGO_API_URL}/api/rates/{rate_id}/"
+
+        client_response = requests.get(client_url)
+        rate_response = requests.get(rate_url)
+
+        if client_response.status_code != 200 or rate_response.status_code != 200:
+            return HttpResponse("Error fetching client or rate data.", status=400)
+
+        client_data = client_response.json()
+        rate_data = rate_response.json()
+
+        # Create payment with YooKassa
+        payment_description = f"Telegram subscription payment for {rate_data['name']}"
+        try:
+            payment = Payment.create({
+                "amount": {
+                    "value": str(rate_data["price"]),
+                    "currency": "RUB"
+                },
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": request.build_absolute_uri('/telegram/thanks/')
+                },
+                "capture": True,
+                "description": payment_description
+            })
+
+            confirmation_url = getattr(payment.confirmation, 'confirmation_url', None)
+            if not confirmation_url:
+                return HttpResponse("Error: confirmation URL missing in payment response.", status=500)
+
+            # Store necessary data in cache with a timeout of 10 minutes (600 seconds)
+            cache_key = f"payment_{payment.id}"
+            if type_payment == "renewal":
+                if not subscription_id:
+                    return HttpResponse("Missing subscription_id for renewal.", status=400)
+
+                # Store subscription_id for renewal
+                cache.set(cache_key, {
+                    "client_id": client_id,
+                    "rate_id": rate_id,
+                    "type_payment": "renewal",
+                    "subscription_id": subscription_id
+                }, timeout=600)
+
+            elif type_payment == "new_device":
+                # Store data for creating a new subscription
+                cache_data = {
+                    "client_id": client_id,
+                    "rate_id": rate_id,
+                    "type_payment": "new_device"
+                }
+                if ref_client:  # Add ref_client if it's provided
+                    cache_data["ref_client"] = ref_client
+
+                cache.set(cache_key, cache_data, timeout=600)
+
+            else:
+                return HttpResponse("Invalid type_payment value.", status=400)
+
             return redirect(confirmation_url)
-        else:
-            return HttpResponse("Error: confirmation URL missing in payment response.", status=500)
+
+        except Exception as e:
+            return HttpResponse(f"Error creating payment for Telegram: {str(e)}", status=400)
 
     except Exception as e:
-        return HttpResponse("Error creating payment for Telegram.", status=400)
+        return HttpResponse(f"Error processing request: {str(e)}", status=400)
+
+
     
 @csrf_exempt
 def telegram_thanks_view(request):
@@ -344,49 +406,114 @@ def telegram_download_config(request, config_filename, hash_digest):
         raise Http404("Config file not found.")
     
 
-# Webhook to handle asynchronous payment confirmation
 @csrf_exempt
-def yookassa_webhook(request):
+def yookassawebhook(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
+        try:
+            # Parse incoming webhook data
+            data = json.loads(request.body)
+            print("Received data from YooKassa:", data)  # Debugging
 
-        payment_id = data.get("object", {}).get("id")
-        payment_status = data.get("object", {}).get("status")
+            event_type = data.get("event")
+            payment_id = data.get("object", {}).get("id")
+            payment_status = data.get("object", {}).get("status")
 
-        # Check if payment succeeded
-        if payment_status == 'succeeded' and payment_id == request.session.get('telegram_payment_id'):
-            client_id = request.session.get('telegram_client_id')
-            rate_id = request.session.get('telegram_rate_id')
-            subscription_id = process_subscription(client_id, rate_id, request)
-            if subscription_id is None:
-                return HttpResponse("Error processing subscription.", status=400)
-            request.session['telegram_subscription_id'] = str(subscription_id)
+            # Ensure we are processing only "payment.succeeded" events
+            if event_type == 'payment.succeeded' and payment_status == 'succeeded':
+                # Retrieve payment data from the cache
+                payment_data = cache.get(f"payment_{payment_id}")
+                if not payment_data:
+                    print("Payment data not found in cache.")  # Debugging
+                    return HttpResponse("Payment data not found in cache.", status=400)
 
-            # Generate config using WGAPI
-            request_data = json.dumps({"subscription_id": subscription_id})
-            response = requests.post(f"{settings.WGAPI_URL}/wireguard/add_user/", data=request_data)
+                # Extract type_payment, client_id, rate_id, and ref_client from cached data
+                type_payment = payment_data.get("type_payment")
+                client_id = payment_data.get("client_id")
+                rate_id = payment_data.get("rate_id")
+                ref_client = payment_data.get("ref_client")  # Optional for new_device
 
-            if response.status_code == 200 and response.json().get("status") == "success":
-                config_content = response.json().get("config_content")
-                config_filename = f"{subscription_id}.conf"
-                config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+                if type_payment == "renewal":
+                    subscription_id = payment_data.get("subscription_id")
+                    if not subscription_id:
+                        return HttpResponse("Missing subscription_id for renewal.", status=400)
 
-                with open(config_path, 'w') as config_file:
-                    config_file.write(config_content)
+                    # Calculate new end date for the subscription
+                    current_date = datetime.now()
+                    rate_response = requests.get(f"{DJANGO_API_URL}/api/rates/{rate_id}/")
+                    if rate_response.status_code == 200:
+                        rate_data = rate_response.json()
+                        additional_days = rate_data.get("dayamount", 30)  # Fallback to 30 days if not provided
+                        new_dateend = (current_date + timedelta(days=additional_days)).isoformat()
 
-                # Generate a secure hash for the download link
-                secret_key = settings.SECRET_KEY
-                hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+                        # Call update_subscription_dateend view
+                        update_payload = {
+                            "subscription_id": subscription_id,
+                            "dateend": new_dateend
+                        }
+                        update_response = requests.post(
+                            f"{DJANGO_API_URL}/api/update_subscription_dateend/", 
+                            json=update_payload
+                        )
 
-                # Respond indicating the config is ready
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Config generated. Return to Telegram to get it.',
-                    'download_link': f"/telegram/download-config/{config_filename}/{hash_digest}/"
-                })
-            else:
-                return HttpResponse("Error creating configuration file via webhook.", status=400)
+                        if update_response.status_code == 200:
+                            print(f"Subscription {subscription_id} successfully updated with new dateend: {new_dateend}")
+                            return HttpResponse("Subscription renewed successfully.", status=200)
+                        else:
+                            print(f"Failed to update subscription {subscription_id}. Response: {update_response.json()}")
+                            return HttpResponse("Error renewing subscription.", status=400)
+                    else:
+                        return HttpResponse("Error fetching rate data for renewal.", status=400)
 
-        return JsonResponse({"status": "ignored", "message": "Payment status not succeeded or unmatched payment ID."}, status=400)
+                elif type_payment == "new_device":
+                    # Proceed with creating a new subscription as before
+                    subscription_id = process_subscription(client_id, rate_id, request)
+                    if subscription_id is None:
+                        print("Error processing subscription.")  # Debugging
+                        return HttpResponse("Error processing subscription.", status=400)
 
+                    print(f"Subscription created with ID: {subscription_id}")  # Debugging
+
+                    # Generate secure hash for the download link
+                    config_filename = f"{subscription_id}.conf"
+                    secret_key = settings.SECRET_KEY
+                    hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+                    download_link = f"/telegram/download-config/{config_filename}/{hash_digest}/"
+
+                    # Prepare payload for external server
+                    external_data = {
+                        'status': 'success',
+                        'message': 'Config generated. Return to Telegram to get it.',
+                        'download_link': download_link,
+                        'client_id': client_id
+                    }
+
+                    # Add ref_client only if it's provided
+                    if ref_client:
+                        external_data['ref_client'] = ref_client
+
+                    # Send data to external server
+                    external_response = requests.post(
+                        "http://v2494327.hosted-by-vdsina.ru:9090/payment_completed",
+                        json=external_data
+                    )
+
+                    if external_response.status_code == 200:
+                        print("Data successfully sent to external server")  # Debugging
+                        return HttpResponse("Success", status=200)
+                    else:
+                        print("Failed to send data to external server:", external_response.status_code)
+                        return HttpResponse("Error sending data to external server.", status=500)
+
+                else:
+                    print("Invalid type_payment value.")  # Debugging
+                    return HttpResponse("Invalid type_payment value.", status=400)
+
+            print("Ignored non-succeeded payment or unmatched event type.")  # Debugging
+            return JsonResponse({"status": "ignored", "message": "Payment status not succeeded or unmatched payment ID."}, status=400)
+
+        except Exception as e:
+            print(f"Error processing webhook: {str(e)}")  # Debugging
+            return HttpResponse("Internal server error.", status=500)
+
+    print("Invalid request method")  # Debugging
     return HttpResponse(status=405)
