@@ -5,7 +5,7 @@ import json
 import requests
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from .config import DJANGO_API_URL, WGAPI_URL
+from .config import DJANGO_API_URL, WGAPI_URL, PAYMENT_MODULE
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.conf import settings
@@ -487,13 +487,14 @@ def yookassawebhook(request):
                         'client_id': client_id
                     }
 
-                    # Add ref_client only if it's provided
+                    # Add ref_client and rate_id only if it's provided
                     if ref_client:
                         external_data['ref_client'] = ref_client
+                        external_data['rate_id'] = rate_id
 
                     # Send data to external server
                     external_response = requests.post(
-                        "http://v2494327.hosted-by-vdsina.ru:9090/payment_completed",
+                        f"{PAYMENT_MODULE}:9090/payment_completed",
                         json=external_data
                     )
 
