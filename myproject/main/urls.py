@@ -15,5 +15,5 @@ urlpatterns = [
     path('telegram/create-payment/<str:client_id>/<str:rate_id>/', views.telegram_create_payment, name='telegram_create_payment'),
     path('telegram/thanks/', views.telegram_thanks_view, name='telegram_thanks'),
     path('telegram/download-config/<str:config_filename>/<str:hash_digest>/', views.telegram_download_config, name='telegram_download_config'),
-    path('yookassa-webhook/',views.yookassa_webhook, name='yookassa_webhook'),  # Add the webhook endpoint
+    path('yookassa_webhook/', views.yookassawebhook, name='yookassawebhook'),  # Add the webhook endpoint
 ]

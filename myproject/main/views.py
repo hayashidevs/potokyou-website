@@ -5,7 +5,7 @@ import json
 import requests
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from .config import DJANGO_API_URL, WGAPI_URL, PAYMENT_MODULE
+from .config import DJANGO_API_URL, WGAPI_URL, PAYMENT_MODULE, WEBSITE
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.conf import settings
@@ -18,6 +18,11 @@ import hmac
 import hashlib
 from datetime import datetime, timedelta
 import uuid
+import asyncio
+import aiohttp
+from dateutil import parser
+import random
+import emoji
 
 Configuration.account_id = settings.YOOKASSA_SHOP_ID
 Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
@@ -83,7 +88,7 @@ def process_subscription(client_id, rate_id, request):
     client_response = requests.get(f"{DJANGO_API_URL}/api/clients/{client_id}/")
     if client_response.status_code == 200:
         client_data = client_response.json()
-        client_name = client_data.get("name", f"Client_{client_id}")  # Fallback if name is missing
+        client_name = client_data.get("name", f"")  # Fallback if name is missing
     else:
         print("Error fetching client data:", client_response.status_code)
         return None
@@ -95,12 +100,16 @@ def process_subscription(client_id, rate_id, request):
         rate_name = rate_data.get("name", f"Rate_{rate_id}")  # Fallback if name is missing
         day_amount = rate_data.get("dayamount", 0)
         dateend = datestart + timedelta(days=day_amount)
+        
     else:
         print("Error fetching rate data:", rate_data_response.status_code)
         return None
 
+    all_emojis = list(emoji.EMOJI_DATA.keys())
+    random_emojis = ''.join(random.sample(all_emojis, 4))
+
     # Create a meaningful subscription name
-    subscription_name = f"{client_name}_Sub_{rate_name}_{datestart.strftime('%Y-%m-%d')}"
+    subscription_name = f"Подписка '{random_emojis}'"
 
     # Prepare data for creating the subscription
     subscription_data = {
@@ -129,25 +138,37 @@ def process_subscription(client_id, rate_id, request):
 @api_view(['POST'])
 def update_subscription_dateend(request):
     subscription_id = request.data.get('subscription_id')
-    dateend_update = request.data.get('dateend')
+    dateend_update_str = request.data.get('dateend')
 
-    # API URL for updating the subscription
-    update_subscription_url = f"{DJANGO_API_URL}/api/update_subscription_dateend/"
+    if not subscription_id or not dateend_update_str:
+        return Response({'status': 'error', 'message': 'Missing subscription_id or dateend'}, status=400)
 
-    # Payload for the update request
-    payload = {
-        "subscription_id": subscription_id,
-        "dateend": dateend_update
-    }
+    try:
+        # Construct the remote URL for updating the subscription
+        update_subscription_url = f"{DJANGO_API_URL}/api/subscriptions/{subscription_id}/"
 
-    # Make the API call to update the subscription dateend
-    response = requests.post(update_subscription_url, json=payload)
-    
-    # Process response
-    if response.status_code == 200:
-        return Response({'status': 'success', 'message': 'Subscription dateend updated successfully'})
-    else:
-        return Response({'status': 'error', 'message': 'Failed to update subscription dateend'}, status=response.status_code)
+        # Ensure the date is correctly parsed and properly formatted
+        dateend_update = parser.parse(dateend_update_str)
+        if dateend_update.tzinfo is None:
+            dateend_update = timezone.make_aware(dateend_update, timezone.get_current_timezone())
+
+        # Format the date as ISO format for PATCH request
+        payload = {
+            "dateend": dateend_update.isoformat()
+        }
+
+        # Make the PATCH request to the remote service
+        response = requests.patch(update_subscription_url, json=payload)
+
+        # Handle response status
+        if response.status_code == 200:
+            return Response({'status': 'success', 'message': 'Subscription dateend updated successfully'})
+        else:
+            print(f"Failed to update subscription. Response: {response.status_code}, {response.text}")
+            return Response({'status': 'error', 'message': 'Failed to update subscription dateend'}, status=response.status_code)
+
+    except ValueError as e:
+        return Response({'status': 'error', 'message': f'Invalid date format for dateend: {e}'}, status=400)
     
 def download_config(request, config_filename, hash_digest):
     # Verify hash for anti-tampering
@@ -277,15 +298,12 @@ def create_payment(request, client_id, rate_id):
     
 
 @csrf_exempt
-def telegram_create_payment(request):
+def telegram_create_payment(request, client_id, rate_id):
     try:
-        # Parse JSON request body
-        data = json.loads(request.body)
-        client_id = data.get("client_id")
-        rate_id = data.get("rate_id")
-        type_payment = data.get("type_payment")
-        subscription_id = data.get("subscription_id")  # Used for renewal
-        ref_client = data.get("ref_client")  # Referral client (optional)
+        # Parse query parameters
+        type_payment = request.GET.get("type_payment", "new_device")  # Default to "new_device" if not provided
+        subscription_id = request.GET.get("subs_id")  # Used for renewal
+        ref_client = request.GET.get("ref_client")  # Referral client (optional)
 
         # Validate required parameters
         if not client_id or not rate_id or not type_payment:
@@ -314,10 +332,10 @@ def telegram_create_payment(request):
                 },
                 "confirmation": {
                     "type": "redirect",
-                    "return_url": request.build_absolute_uri('/telegram/thanks/')
+                    "return_url": request.build_absolute_uri('/telegram/thanks/'),
                 },
                 "capture": True,
-                "description": payment_description
+                "description": payment_description,
             })
 
             confirmation_url = getattr(payment.confirmation, 'confirmation_url', None)
@@ -335,7 +353,7 @@ def telegram_create_payment(request):
                     "client_id": client_id,
                     "rate_id": rate_id,
                     "type_payment": "renewal",
-                    "subscription_id": subscription_id
+                    "subscription_id": subscription_id,
                 }, timeout=600)
 
             elif type_payment == "new_device":
@@ -343,7 +361,7 @@ def telegram_create_payment(request):
                 cache_data = {
                     "client_id": client_id,
                     "rate_id": rate_id,
-                    "type_payment": "new_device"
+                    "type_payment": "new_device",
                 }
                 if ref_client:  # Add ref_client if it's provided
                     cache_data["ref_client"] = ref_client
@@ -360,6 +378,7 @@ def telegram_create_payment(request):
 
     except Exception as e:
         return HttpResponse(f"Error processing request: {str(e)}", status=400)
+
 
 
     
@@ -406,6 +425,19 @@ def telegram_download_config(request, config_filename, hash_digest):
         raise Http404("Config file not found.")
     
 
+def send_renewal_confirmation(client_id):
+    payment_module_url = f"{PAYMENT_MODULE}/send_renewal_confirmation"
+
+    try:
+        response = requests.post(payment_module_url, json={'client_id': client_id})
+        if response.status_code == 200:
+            print("Renewal confirmation sent successfully to payment_module.")
+        else:
+            print(f"Failed to send renewal confirmation. Status Code: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        print(f"Exception occurred while sending renewal confirmation: {str(e)}")
+
+
 @csrf_exempt
 def yookassawebhook(request):
     if request.method == 'POST':
@@ -432,40 +464,60 @@ def yookassawebhook(request):
                 rate_id = payment_data.get("rate_id")
                 ref_client = payment_data.get("ref_client")  # Optional for new_device
 
+                # Handling Subscription Renewal
                 if type_payment == "renewal":
                     subscription_id = payment_data.get("subscription_id")
                     if not subscription_id:
                         return HttpResponse("Missing subscription_id for renewal.", status=400)
 
-                    # Calculate new end date for the subscription
-                    current_date = datetime.now()
+                    # Fetch the rate data to determine the dayamount
                     rate_response = requests.get(f"{DJANGO_API_URL}/api/rates/{rate_id}/")
                     if rate_response.status_code == 200:
                         rate_data = rate_response.json()
-                        additional_days = rate_data.get("dayamount", 30)  # Fallback to 30 days if not provided
-                        new_dateend = (current_date + timedelta(days=additional_days)).isoformat()
+                        additional_days = rate_data.get("dayamount", 30)  # Default to 30 days if not specified
 
-                        # Call update_subscription_dateend view
-                        update_payload = {
-                            "subscription_id": subscription_id,
-                            "dateend": new_dateend
-                        }
-                        update_response = requests.post(
-                            f"{DJANGO_API_URL}/api/update_subscription_dateend/", 
-                            json=update_payload
-                        )
+                        # Retrieve the existing subscription end date
+                        subscription_response = requests.get(f"{DJANGO_API_URL}/api/subscriptions/{subscription_id}/")
+                        if subscription_response.status_code == 200:
+                            subscription_data = subscription_response.json()
+                            current_dateend_str = subscription_data.get("dateend")
 
-                        if update_response.status_code == 200:
-                            print(f"Subscription {subscription_id} successfully updated with new dateend: {new_dateend}")
-                            return HttpResponse("Subscription renewed successfully.", status=200)
+                            # Parse current dateend and calculate the new dateend
+                            current_dateend = parser.parse(current_dateend_str)
+                            if current_dateend.tzinfo is None:
+                                current_dateend = timezone.make_aware(current_dateend, timezone.get_current_timezone())
+
+                            # Calculate the new dateend by adding the additional days
+                            new_dateend = current_dateend + timedelta(days=additional_days)
+
+                            # Update the subscription dateend remotely
+                            update_payload = {
+                                "subscription_id": subscription_id,
+                                "dateend": new_dateend.isoformat()
+                            }
+
+                            update_response = requests.post(
+                                f"{DJANGO_API_URL}/api/update_subscription_dateend/",
+                                json=update_payload
+                            )
+
+                            if update_response.status_code == 200:
+                                print(f"Subscription {subscription_id} successfully updated with new dateend: {new_dateend}")
+
+                                # Send renewal confirmation message
+                                send_renewal_confirmation(client_id)
+
+                                return HttpResponse("Subscription renewed successfully.", status=200)
+                            else:
+                                print(f"Failed to update subscription {subscription_id}. Response: {update_response.json()}")
+                                return HttpResponse("Error renewing subscription.", status=400)
                         else:
-                            print(f"Failed to update subscription {subscription_id}. Response: {update_response.json()}")
-                            return HttpResponse("Error renewing subscription.", status=400)
+                            return HttpResponse("Error fetching current subscription data.", status=400)
                     else:
                         return HttpResponse("Error fetching rate data for renewal.", status=400)
 
+                # Handling New Device Payment (Creating a New Subscription)
                 elif type_payment == "new_device":
-                    # Proceed with creating a new subscription as before
                     subscription_id = process_subscription(client_id, rate_id, request)
                     if subscription_id is None:
                         print("Error processing subscription.")  # Debugging
@@ -473,41 +525,74 @@ def yookassawebhook(request):
 
                     print(f"Subscription created with ID: {subscription_id}")  # Debugging
 
-                    # Generate secure hash for the download link
-                    config_filename = f"{subscription_id}.conf"
-                    secret_key = settings.SECRET_KEY
-                    hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
-                    download_link = f"/telegram/download-config/{config_filename}/{hash_digest}/"
-
-                    # Prepare payload for external server
-                    external_data = {
-                        'status': 'success',
-                        'message': 'Config generated. Return to Telegram to get it.',
-                        'download_link': download_link,
-                        'client_id': client_id
-                    }
-
-                    # Add ref_client and rate_id only if it's provided
+                    # If ref_client is provided, update the client's referred_by field
                     if ref_client:
-                        external_data['ref_client'] = ref_client
-                        external_data['rate_id'] = rate_id
+                        try:
+                            # Add referral logic
+                            patch_url = f"{DJANGO_API_URL}/api/clients/{client_id}/update_referred_by/"
+                            payload = {'referred_by': ref_client}
 
-                    # Send data to external server
-                    external_response = requests.post(
-                        f"{PAYMENT_MODULE}:9090/payment_completed",
-                        json=external_data
-                    )
+                            # Run the async function to update referral
+                            async def update_referred_by():
+                                async with aiohttp.ClientSession() as session:
+                                    async with session.patch(patch_url, json=payload) as response:
+                                        if response.status != 200:
+                                            print(f"Failed to update client referred_by: {response.status}")
+                                            return False
+                                        print(f"Successfully updated client {client_id} referred_by with {ref_client}")
+                                        return True
 
-                    if external_response.status_code == 200:
-                        print("Data successfully sent to external server")  # Debugging
-                        return HttpResponse("Success", status=200)
-                    else:
-                        print("Failed to send data to external server:", external_response.status_code)
-                        return HttpResponse("Error sending data to external server.", status=500)
+                            asyncio.run(update_referred_by())
+                        except Exception as e:
+                            print(f"Error updating referral information: {str(e)}")
 
-                else:
-                    print("Invalid type_payment value.")  # Debugging
-                    return HttpResponse("Invalid type_payment value.", status=400)
+                    # Generate config using WGAPI
+                    request_data = json.dumps({"subscription_id": subscription_id})
+                    response = requests.post(f"{WGAPI_URL}/wireguard/add_user/", data=request_data)
+
+                    if response.status_code == 200 and response.json().get("status") == "success":
+                        config_content = response.json().get("config_content")
+                        config_filename = f"{subscription_id}_config.conf"
+                        config_path = os.path.join(settings.BASE_DIR, "main", "temp_configs", config_filename)
+
+                        # Save the configuration file locally
+                        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+                        with open(config_path, 'w') as config_file:
+                            config_file.write(config_content)
+
+                        # Generate secure hash for the download link
+                        secret_key = settings.SECRET_KEY
+                        hash_digest = hmac.new(secret_key.encode(), config_filename.encode(), hashlib.sha256).hexdigest()
+                        download_link = f"telegram/download-config/{config_filename}/{hash_digest}/"
+
+                        print(f"Generated download URL: {download_link}")  # Debugging
+
+                        # Prepare payload for external server
+                        external_data = {
+                            'status': 'success',
+                            'message': 'Config generated. Return to Telegram to get it.',
+                            'download_link': download_link,
+                            'client_id': client_id,
+                            'rate_id': rate_id,
+                            'datestart': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                        }
+
+                        # Add ref_client and rate_id only if it's provided
+                        if ref_client:
+                            external_data['ref_client'] = ref_client
+
+                        # Send data to external server
+                        external_response = requests.post(
+                            f"{PAYMENT_MODULE}/payment_completed",
+                            json=external_data
+                        )
+
+                        if external_response.status_code == 200:
+                            print("Data successfully sent to external server")  # Debugging
+                            return HttpResponse("Success", status=200)
+                        else:
+                            print("Failed to send data to external server:", external_response.status_code)
+                            return HttpResponse("Error sending data to external server.", status=500)
 
             print("Ignored non-succeeded payment or unmatched event type.")  # Debugging
             return JsonResponse({"status": "ignored", "message": "Payment status not succeeded or unmatched payment ID."}, status=400)
